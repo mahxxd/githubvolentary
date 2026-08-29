@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>A Perfect Day</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,500&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-1:#ffe9d6; --sky-2:#ffd6a5; --sky-3:#ffb997;
+    --accent:#ff8c69; --text-dark:#2b2140; --text-light:#fffaf3;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Poppins',sans-serif;
+    color:var(--text-dark);
+    overflow-x:hidden;
+    background:#111;
+  }
+  h1,h2,h3{font-family:'Playfair Display',serif;}
+
+  #sky-canvas{
+    position:fixed; inset:0; width:100%; height:100%; z-index:-3;
+    transition:background 1.2s linear;
+  }
+
+  .celestial{
+    position:fixed; width:90px; height:90px; border-radius:50%; z-index:-2;
+    left:50%; top:110%; transform:translate(-50%,-50%);
+    transition:box-shadow 1s ease, background 1s ease;
+    pointer-events:none;
+  }
+
+  .stars{
+    position:fixed; inset:0; z-index:-2; opacity:0; transition:opacity 1.5s ease; pointer-events:none;
+  }
+  .star{
+    position:absolute; width:2px; height:2px; background:#fff; border-radius:50%;
+    animation:twinkle 3s infinite ease-in-out;
+  }
+  @keyframes twinkle{ 0%,100%{opacity:.2;} 50%{opacity:1;} }
+
+  .clouds{position:fixed; inset:0; z-index:-1; pointer-events:none; overflow:hidden;}
+  .cloud{
+    position:absolute; background:rgba(255,255,255,.75); border-radius:100px;
+    filter:blur(1px); animation:drift linear infinite;
+  }
+  .cloud::before,.cloud::after{
+    content:''; position:absolute; background:inherit; border-radius:100px;
+  }
+  @keyframes drift{ from{transform:translateX(-20vw);} to{transform:translateX(120vw);} }
+
+  .hills{
+    position:fixed; bottom:0; left:0; width:100%; z-index:-1; pointer-events:none;
+  }
+
+  nav.dots{
+    position:fixed; right:22px; top:50%; transform:translateY(-50%); z-index:50;
+    display:flex; flex-direction:column; gap:14px;
+  }
+  nav.dots a{
+    width:11px; height:11px; border-radius:50%; background:rgba(255,255,255,.5);
+    border:1px solid rgba(255,255,255,.8); display:block; transition:.3s;
+  }
+  nav.dots a.active{background:var(--accent); transform:scale(1.4); box-shadow:0 0 10px var(--accent);}
+
+  section{
+    min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    position:relative; text-align:center; padding:60px 8vw;
+  }
+
+  .reveal{ opacity:0; transform:translateY(40px); transition:opacity 1s ease, transform 1s ease; }
+  .reveal.show{ opacity:1; transform:translateY(0); }
+
+  .tag{
+    font-size:.85rem; letter-spacing:4px; text-transform:uppercase; opacity:.75; margin-bottom:14px;
+  }
+  h1.hero{
+    font-size:clamp(2.6rem,7vw,5.5rem); line-height:1.1; margin-bottom:18px;
+  }
+  h1.hero em{ font-style:italic; color:var(--accent); }
+  .sub{ font-size:1.15rem; max-width:560px; opacity:.85; margin-bottom:34px; }
+
+  .scroll-cue{
+    position:absolute; bottom:36px; left:50%; transform:translateX(-50%);
+    font-size:.8rem; letter-spacing:2px; opacity:.7;
+  }
+  .scroll-cue::after{
+    content:''; display:block; width:1px; height:34px; margin:8px auto 0;
+    background:currentColor; animation:pulse-line 1.8s infinite;
+  }
+  @keyframes pulse-line{ 0%{transform:scaleY(0); opacity:0;} 50%{transform:scaleY(1); opacity:1;} 100%{transform:scaleY(0); opacity:0; transform-origin:top;} }
+
+  .card-row{
+    display:flex; gap:28px; flex-wrap:wrap; justify-content:center; margin-top:20px;
+  }
+  .card{
+    width:230px; padding:30px 22px; border-radius:22px;
+    background:rgba(255,255,255,.35); backdrop-filter:blur(14px);
+    border:1px solid rgba(255,255,255,.5);
+    box-shadow:0 20px 40px -20px rgba(0,0,0,.25);
+    transition:transform .4s ease, box-shadow .4s ease;
+  }
+  .card:hover{ transform:translateY(-12px) rotate(-1deg); box-shadow:0 30px 50px -20px rgba(0,0,0,.35); }
+  .card .icon{ font-size:2.4rem; margin-bottom:10px; display:block; }
+  .card h3{ font-size:1.1rem; margin-bottom:8px; }
+  .card p{ font-size:.88rem; opacity:.85; line-height:1.4; }
+
+  #night{ color:var(--text-light); }
+  #night .card{ background:rgba(30,25,60,.4); border-color:rgba(255,255,255,.15); }
+
+  .wish-field{
+    position:relative; width:min(90vw,700px); height:260px; margin-top:10px;
+    border-radius:20px; overflow:hidden;
+  }
+  .wishstar{
+    position:absolute; width:6px; height:6px; background:#fff; border-radius:50%;
+    cursor:pointer; box-shadow:0 0 6px #fff, 0 0 12px #ffd; transition:transform .2s;
+  }
+  .wishstar:hover{ transform:scale(2.4); }
+  .sparkle{
+    position:absolute; pointer-events:none; border-radius:50%;
+    animation:sparkle-out .8s ease-out forwards;
+  }
+  @keyframes sparkle-out{
+    0%{ opacity:1; transform:translate(0,0) scale(1); }
+    100%{ opacity:0; transform:translate(var(--dx),var(--dy)) scale(0); }
+  }
+  .wish-msg{ font-size:.95rem; margin-top:14px; opacity:0; transition:opacity .6s; height:1.2em; }
+  .wish-msg.show{ opacity:1; }
+
+  footer{
+    background:#0c0a1a; color:#e8e4f5; text-align:center; padding:60px 20px 40px; position:relative; z-index:5;
+  }
+  footer h2{ font-size:1.8rem; margin-bottom:10px; }
+  footer .signature{ font-family:'Playfair Display',serif; font-style:italic; opacity:.7; margin-top:24px; font-size:.95rem; }
+
+  .btn-day{
+    padding:14px 34px; border-radius:50px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--accent),#ffcf6e);
+    color:#2b2140; font-weight:600; letter-spacing:.5px; font-size:.95rem;
+    box-shadow:0 10px 25px -10px rgba(255,140,105,.6);
+    transition:transform .3s, box-shadow .3s;
+  }
+  .btn-day:hover{ transform:translateY(-3px) scale(1.03); box-shadow:0 16px 30px -10px rgba(255,140,105,.8); }
+
+  @media (max-width:600px){
+    nav.dots{ right:10px; }
+    .card{ width:80vw; }
+  }
+</style>
+</head>
+<body>
+
+<div id="sky-canvas"></div>
+<div class="stars" id="stars"></div>
+<div class="clouds" id="clouds"></div>
+<div class="celestial" id="celestial"></div>
+
+<svg class="hills" viewBox="0 0 1440 300" preserveAspectRatio="none" style="height:22vh;">
+  <path d="M0,150 C240,60 480,220 720,140 C960,60 1200,200 1440,120 L1440,300 L0,300 Z" fill="#2f4d3a" opacity="0.85"/>
+  <path d="M0,200 C300,140 600,260 900,190 C1150,140 1300,220 1440,190 L1440,300 L0,300 Z" fill="#1c3226" opacity="0.9"/>
+</svg>
+
+<nav class="dots" id="dots">
+  <a href="#dawn" data-label="Dawn" class="active"></a>
+  <a href="#morning" data-label="Morning"></a>
+  <a href="#noon" data-label="Noon"></a>
+  <a href="#evening" data-label="Evening"></a>
+  <a href="#night" data-label="Night"></a>
+</nav>
+
+<section id="dawn">
+  <p class="tag reveal">05:47 AM</p>
+  <h1 class="hero reveal">A perfect day begins with a <em>quiet</em> breath.</h1>
+  <p class="sub reveal">Scroll through the hours of a day designed the way a perfect one might feel — slow mornings, bright afternoons, golden evenings, and a sky full of wishes.</p>
+  <div class="scroll-cue">SCROLL</div>
+</section>
+
+<section id="morning">
+  <p class="tag reveal">08:15 AM</p>
+  <h1 class="hero reveal">Coffee steam, <em>sunlight</em>, and a little ambition.</h1>
+  <p class="sub reveal">The best mornings don't rush. They stretch, they smell like something warm, and they leave room for one good idea.</p>
+  <div class="card-row">
+    <div class="card reveal"><span class="icon">☕</span><h3>Slow Start</h3><p>No alarms fought. Just light through the curtains and a plan forming.</p></div>
+    <div class="card reveal"><span class="icon">📖</span><h3>One Good Page</h3><p>A page read for joy, not for a grade — the kind that stays with you.</p></div>
+    <div class="card reveal"><span class="icon">🏃</span><h3>Moving Body</h3><p>A short walk or a warm-up set, enough to wake the muscles and the mind.</p></div>
+  </div>
+</section>
+
+<section id="noon">
+  <p class="tag reveal">12:30 PM</p>
+  <h1 class="hero reveal">The sun is highest, so is the <em>focus</em>.</h1>
+  <p class="sub reveal">Noon is for deep work — the kind where an hour disappears because you were building something you actually cared about.</p>
+  <div class="card-row">
+    <div class="card reveal"><span class="icon">💡</span><h3>Deep Work</h3><p>One hard problem, one clear head, zero notifications.</p></div>
+    <div class="card reveal"><span class="icon">🥗</span><h3>Good Fuel</h3><p>A meal that actually helps the afternoon, not one that ends it.</p></div>
+    <div class="card reveal"><span class="icon">🎯</span><h3>Small Win</h3><p>A checked box. Not everything — just the thing that mattered most.</p></div>
+  </div>
+</section>
+
+<section id="evening">
+  <p class="tag reveal">06:40 PM</p>
+  <h1 class="hero reveal">Gold light, <em>slower</em> thoughts.</h1>
+  <p class="sub reveal">Evenings are for the people and things that make the day worth remembering — a call, a laugh, a walk with no destination.</p>
+  <div class="card-row">
+    <div class="card reveal"><span class="icon">🌇</span><h3>Golden Hour</h3><p>The light that makes ordinary streets look like memories already.</p></div>
+    <div class="card reveal"><span class="icon">📷</span><h3>One Photo</h3><p>Not for anyone else. Just proof this hour existed.</p></div>
+    <div class="card reveal"><span class="icon">💬</span><h3>Real Conversation</h3><p>Someone who actually listens, and something worth telling them.</p></div>
+  </div>
+</section>
+
+<section id="night">
+  <p class="tag reveal">10:05 PM</p>
+  <h1 class="hero reveal">Every perfect day ends in <em>stars</em>.</h1>
+  <p class="sub reveal">Click a star. Make a wish. The day is closing, but somewhere it's already becoming tomorrow.</p>
+  <div class="wish-field reveal" id="wishField"></div>
+  <p class="wish-msg" id="wishMsg">Wish sent into the night sky ✦</p>
+</section>
+
+<footer>
+  <h2>That was a perfect day.</h2>
+  <p style="opacity:.75; max-width:480px; margin:0 auto;">Not because everything happened. Because enough of it did — quietly, on purpose, and in the right order.</p>
+  <button class="btn-day" id="restartBtn">Relive the day</button>
+  <p class="signature">— crafted with light, motion, and a little bit of sky</p>
+</footer>
+
+<script>
+// Sky gradients keyed to section id
+const skyStops = {
+  dawn:    ['#ffd9b3', '#ffb199', '#f77b6e'],
+  morning: ['#bfe3ff', '#eaf6ff', '#fff3d6'],
+  noon:    ['#5db3ff', '#a9dcff', '#e9f8ff'],
+  evening: ['#ff9a5c', '#ff5f7e', '#7c4a8f'],
+  night:   ['#050818', '#0d1330', '#1a1440']
+};
+const celestialStyle = {
+  dawn:    {bg:'radial-gradient(circle at 35% 35%, #fff2c2, #ff9d5c)', shadow:'0 0 80px 30px rgba(255,180,90,.7)'},
+  morning: {bg:'radial-gradient(circle at 35% 35%, #fffbe6, #ffe27a)', shadow:'0 0 100px 40px rgba(255,230,140,.8)'},
+  noon:    {bg:'radial-gradient(circle at 35% 35%, #ffffff, #fff2a8)', shadow:'0 0 140px 60px rgba(255,255,200,.9)'},
+  evening: {bg:'radial-gradient(circle at 35% 35%, #ffe1c2, #ff6f3c)', shadow:'0 0 100px 40px rgba(255,110,60,.7)'},
+  night:   {bg:'radial-gradient(circle at 30% 30%, #f4f4ff, #cfd3ea)', shadow:'0 0 60px 25px rgba(220,220,255,.6)'}
+};
+
+const sky = document.getElementById('sky-canvas');
+const celestial = document.getElementById('celestial');
+const starsLayer = document.getElementById('stars');
+const sections = document.querySelectorAll('section');
+const navLinks = document.querySelectorAll('#dots a');
+
+function setSky(id, progress){
+  const stops = skyStops[id];
+  sky.style.background = `linear-gradient(to bottom, ${stops[0]}, ${stops[1]} 55%, ${stops[2]})`;
+  const cs = celestialStyle[id];
+  celestial.style.background = cs.bg;
+  celestial.style.boxShadow = cs.shadow;
+  const arcX = 12 + progress * 76;
+  const arcY = 95 - Math.sin(progress * Math.PI) * 85;
+  celestial.style.left = arcX + 'vw';
+  celestial.style.top = arcY + 'vh';
+  starsLayer.style.opacity = id === 'night' ? 1 : (id === 'evening' ? progress*0.4 : 0);
+}
+
+function currentSection(){
+  let best = null, bestDist = Infinity;
+  const mid = window.innerHeight/2;
+  sections.forEach(sec=>{
+    const r = sec.getBoundingClientRect();
+    const dist = Math.abs(r.top + r.height/2 - mid);
+    if(dist < bestDist){ bestDist = dist; best = sec; }
+  });
+  return best;
+}
+
+function onScroll(){
+  const sec = currentSection();
+  if(!sec) return;
+  const id = sec.id;
+  const r = sec.getBoundingClientRect();
+  const progress = Math.min(1, Math.max(0, 1 - (r.top + r.height/2) / window.innerHeight));
+  setSky(id, progress);
+  navLinks.forEach(a=>a.classList.toggle('active', a.getAttribute('href') === '#'+id));
+}
+window.addEventListener('scroll', onScroll, {passive:true});
+window.addEventListener('resize', onScroll);
+
+// Reveal on scroll
+const obs = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('show'); });
+},{threshold:0.2});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+
+// Stars field
+for(let i=0;i<140;i++){
+  const s = document.createElement('div');
+  s.className='star';
+  s.style.left = Math.random()*100+'vw';
+  s.style.top = Math.random()*100+'vh';
+  s.style.animationDelay = (Math.random()*3)+'s';
+  s.style.width = s.style.height = (Math.random()*2+1)+'px';
+  starsLayer.appendChild(s);
+}
+
+// Clouds
+const cloudsLayer = document.getElementById('clouds');
+function makeCloud(){
+  const c = document.createElement('div');
+  c.className='cloud';
+  const w = 100+Math.random()*140, h = w*0.4;
+  c.style.width = w+'px'; c.style.height=h+'px';
+  c.style.top = (5+Math.random()*35)+'vh';
+  const dur = 40+Math.random()*40;
+  c.style.animationDuration = dur+'s';
+  c.style.animationDelay = (-Math.random()*dur)+'s';
+  cloudsLayer.appendChild(c);
+}
+for(let i=0;i<6;i++) makeCloud();
+
+// Wish stars
+const wishField = document.getElementById('wishField');
+const wishMsg = document.getElementById('wishMsg');
+for(let i=0;i<28;i++){
+  const ws = document.createElement('div');
+  ws.className='wishstar';
+  ws.style.left = Math.random()*95+'%';
+  ws.style.top = Math.random()*90+'%';
+  ws.addEventListener('click', (e)=>{
+    for(let k=0;k<10;k++){
+      const sp = document.createElement('div');
+      sp.className='sparkle';
+      const size = 4+Math.random()*4;
+      sp.style.width = sp.style.height = size+'px';
+      sp.style.left = ws.style.left;
+      sp.style.top = ws.style.top;
+      sp.style.background = ['#fff','#ffe27a','#c2d6ff'][Math.floor(Math.random()*3)];
+      const angle = Math.random()*Math.PI*2, dist = 20+Math.random()*40;
+      sp.style.setProperty('--dx', Math.cos(angle)*dist+'px');
+      sp.style.setProperty('--dy', Math.sin(angle)*dist+'px');
+      wishField.appendChild(sp);
+      setTimeout(()=>sp.remove(),800);
+    }
+    wishMsg.classList.add('show');
+    clearTimeout(window._wt);
+    window._wt = setTimeout(()=>wishMsg.classList.remove('show'), 2200);
+  });
+  wishField.appendChild(ws);
+}
+
+document.getElementById('restartBtn').addEventListener('click', ()=>{
+  document.getElementById('dawn').scrollIntoView({behavior:'smooth'});
+});
+
+onScroll();
+</script>
+</body>
+</html>
